@@ -1,0 +1,6 @@
+###
+#GET http://127.0.0.1:5000/skill
+#GET http://127.0.0.1:5000/role
+GET http://127.0.0.1:5000/view_course_skills/get_skill/ceo
+#GET http://127.0.0.1:5000/view_course_skills/get_course/Python
+    

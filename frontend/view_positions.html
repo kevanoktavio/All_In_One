@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+    <title>View Position</title>
+
+    <!-- Vue 2 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.10/dist/vue.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+
+    <!-- Nav Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light custombg">
+		<a class="navbar-brand" href="homepage.html">Learning Journey Planning System</a>
+		<div class="navbar-nav">
+			<div class="nav-item active">
+				<a class="nav-link" href="homepage.html">Home</a>
+			</div>
+			<div class="navbar-item dropdown">
+				<a class="nav-link dropdown-toggle" href="#" id="browseDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					Browse
+				</a>
+				<div class="dropdown-menu" aria-labelledby="browseDropdown">
+					<a class="dropdown-item" href="view_courses.html">Courses</a>
+					<a class="dropdown-item" href="view_positions.html">Positions</a>
+					<a class="dropdown-item" href="search_skill.html">Skills</a>
+				</div>
+			</div>
+            <div class="nav-item active" id="checkuser"></div>
+		</div>
+		<div class="navbar-item ml-auto">
+			<a class="nav-link" href="#" onclick="clearSession()">Logout</a>
+		</div>
+	</nav>
+
+    <!--Positions Display-->
+
+
+    <div id="app">
+
+        <section class="pt-5 pb-5">
+            <div class="container">
+
+                <div class="row">
+                    <div class="col-6">
+                        <h3 class="mb-3">Positions </h3>
+                    </div>
+
+                    <div class="col-6 d-flex justify-content-end">
+                        <div v-if="role==1||role==3">
+                            <a class="btn btn-danger" href="create_position.html" role="button">Create Position</a>
+                        </div>
+                    </div>
+
+
+                    <div class="col-12">
+                        <div v-for="(position,index) in positions[0]">
+                            <div class = "row pt-3 pb-3 " v-if="index%3==0">
+                                <div class="col-4">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h4 class="card-title">{{position.Position_Name}}</h4>
+                                            <button :value="position" type="button" class="btn btn-primary" @click="sendPosition(position)">Create Learning Journey</button>
+                                            <span v-if="role==1||role==3">
+                                                <button :value="position" type="button" class="btn btn-danger" @click="sendPosition2(position)">Edit</button>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-4" v-if="positions[0][index+1]">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h4 class="card-title">{{positions[0][index+1] && positions[0][index+1]['Position_Name']}}</h4>
+                                            <button :value="position" type="button" class="btn btn-primary" @click="sendPosition(positions[0][index+1])">Create Learning Journey</button>
+                                            <span v-if="role==1||role==3">
+                                                <button :value="position" type="button" class="btn btn-danger" @click="sendPosition2(positions[0][index+1])">Edit</button>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-4" v-if="positions[0][index+2]">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h4 class="card-title">{{positions[0][index+2] && positions[0][index+2]['Position_Name']}}</h4>
+                                            <button :value="position" type="button" class="btn btn-primary" @click="sendPosition(positions[0][index+2])">Create Learning Journey</button>
+                                            <span v-if="role==1||role==3">
+                                                <button :value="position" type="button" class="btn btn-danger" @click="sendPosition2(positions[0][index+2])">Edit</button>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                            </div>
+                            
+                        </div>
+                    </div>
+
+                </div>    
+    
+            </div>
+        </section>
+    
+    </div>
+
+    <script>
+
+        var user = JSON.parse(sessionStorage.getItem("staff"));
+
+        var config = {
+        method: 'get',
+        url: 'http://127.0.0.1:5000/positions',
+        headers: { }
+        };
+
+
+        var vm = new Vue({
+            el: '#app',
+            data: {
+                positions: [],
+                positionName: "",
+                role: 0
+            },
+            mounted: function(){
+                axios(config)
+                .then(function (response) {
+                    vm.positions.splice(0, 0, response.data.data["positions"]); 
+                    if(sessionStorage.getItem('staff')){
+                        vm.role = user.role;
+                    }
+                })
+            },
+            methods: {
+                sendPosition: function(position){
+                    vm.positionName = position
+                    sessionStorage.setItem("position", JSON.stringify(vm.positionName)); //sessionStorage will have staff obj and position obj
+                    window.location.replace("create_learning_journey.html");
+                },
+                sendPosition2: function(position){
+                    vm.positionName = position
+                    sessionStorage.setItem("position2", JSON.stringify(vm.positionName)); //sessionStorage will have staff obj and position obj
+                    window.location.replace("update_positions.html");
+                }
+            },
+            watch: {
+            }
+            })
+    </script>
+
+    <script>
+        if (sessionStorage.getItem('staff')) {
+            var usertype = user.role;
+            if (usertype==1 | usertype==3) { // if Manager or HR
+                let link = document.createElement('a');
+                link.setAttribute('class', 'nav-link');
+                link.setAttribute('href', 'view_staff_learning_journey.html');
+                link.appendChild(document.createTextNode('View My Staff'));
+                document.getElementById('checkuser').appendChild(link);
+            }
+        }
+        function clearSession() {
+            sessionStorage.clear();
+            window.location.replace('role_toggle.html');
+        }
+    </script>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  </body>
+</html>

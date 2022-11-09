@@ -1,0 +1,13 @@
+nav.custombg {
+    background-color: #e3f2fd;
+}
+button.customblue {
+    background-color: #badffa;
+}
+button.customred {
+    background-color: rgb(249, 112, 112);
+}
+
+body, html {
+    height: 100%;
+}

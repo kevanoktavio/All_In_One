@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+    <title>Create Position</title>
+
+    <!-- Vue 2 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.10/dist/vue.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <!-- Nav Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light custombg">
+		<a class="navbar-brand" href="homepage.html">Learning Journey Planning System</a>
+		<div class="navbar-nav">
+			<div class="nav-item active">
+				<a class="nav-link" href="homepage.html">Home</a>
+			</div>
+			<div class="navbar-item dropdown">
+				<a class="nav-link dropdown-toggle" href="#" id="browseDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					Browse
+				</a>
+				<div class="dropdown-menu" aria-labelledby="browseDropdown">
+					<a class="dropdown-item" href="view_courses.html">Courses</a>
+					<a class="dropdown-item" href="view_positions.html">Positions</a>
+					<a class="dropdown-item" href="search_skill.html">Skills</a>
+				</div>
+			</div>
+            <div class="nav-item active" id="checkuser"></div>
+		</div>
+		<div class="navbar-item ml-auto">
+			<a class="nav-link" href="#" onclick="clearSession()">Logout</a>
+		</div>
+	</nav>
+	<script>
+		if (sessionStorage.getItem('staff')) {
+			var user = JSON.parse(sessionStorage.getItem('staff'));
+			var usertype = user.role;
+			if (usertype==1 | usertype==3) { // if Manager or HR
+                let link = document.createElement('a');
+                link.setAttribute('class', 'nav-link');
+                link.setAttribute('href', 'view_staff_learning_journey.html');
+                link.appendChild(document.createTextNode('View My Staff'));
+                document.getElementById('checkuser').appendChild(link);
+			}
+		}
+		function clearSession() {
+			sessionStorage.clear();
+			window.location.replace('role_toggle.html');
+		}
+	</script>
+    
+    <!-- Page Content -->
+    <div class="container mx-5 my-4" id="app">
+        <form>
+            <h2>Create Position</h2><br/>
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <label for="positionName"><b>Position Name</b></label>
+                    <input type="text" class="form-control" id="position_name" placeholder="Enter position name" v-model="position_name">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <!-- <div class="form-group col-md-2">
+                    <label for="skillset_ID"><b>Skillset ID</b></label>
+                    <input type="number" min="1" class="form-control" id="skillset_ID" placeholder="Enter ID" v-model="skillset_ID">
+                </div> -->
+                <!-- <div class="form-group col-md-1"></div> -->
+                <div class="form-group col-md-6">
+                    <label><b>Skills Required by Position</b></label><br/>
+                    <div v-for="(skill,index) in skills[0]" v-bind:key="skill.Skill_Name">
+                        <label class="form-group form-check">
+                            <input type="checkbox" class="form-check-input" v-model="required_skills" v-bind:id="index" v-bind:value="skill.Skill_Name">
+                            {{skill.Skill_Name}}
+                        </label>
+                    </div>
+                </div>
+            </div><br/>
+
+            <div class="form-row text-right">
+                <div class="col-sm-12">
+                    <button type="reset" class="btn customred">Cancel</button>
+                    <button type="submit" class="btn customblue" @click="createPosition()">Create</button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+
+        var config1 = {
+            method: 'get',
+            url: 'http://127.0.0.1:5000/skill',
+            headers: {
+                /* "Access-Control-Allow-Origin": "*", */
+                "Content-Type": "application/json",
+            }
+        };
+
+        var vm = new Vue({
+            el: '#app',
+            data: {
+                skills: [],
+                required_skills: [],
+                position_name: '',
+                skillset_ID: '',
+            },
+            methods: {
+                createPosition: function() {
+                    event.preventDefault();
+                    let temp = {
+                        'Position_Name': this.position_name,
+                    };
+                    var config2 = {
+                        method: 'post',
+                        url: 'http://127.0.0.1:5000/create_new_position/' + vm.position_name,
+                        headers: {
+                            /* "Access-Control-Allow-Origin": "*", */
+                            "Content-Type": "application/json",
+                        },
+                        data: temp
+                    }
+                    axios(config2)
+                    .then(response => {
+                        alert('New role added!');
+                        this.createSkillset();
+                    })
+                    .catch(error => {
+                        // this.createSkillset();
+                        console.log(error);
+                    });
+                },
+                createSkillset: function() {
+                    event.preventDefault();
+                
+                    let final = [];
+                    
+                    for (skill of this.required_skills) {
+                        let temp1 = {
+                            'Position_Name': this.position_name,
+                            'Skill_Name': skill,
+                        }
+                        final.push(temp1);
+                    }
+                    //console.log(final);
+                    for (i in final) {
+                        var config3 = {
+                            method: 'post',
+                            url: 'http://127.0.0.1:5000/create_new_skillset',
+                            headers: {
+                                /* "Access-Control-Allow-Origin": "*", */
+                                "Content-Type": "application/json"
+                            },
+                            data: final[i]
+                        }
+                        //console.log(final[i])
+                        axios(config3)
+                        .then( function (response) {
+                            //alert('New skillset(s) added!');
+                        })
+                        .catch (error => {
+                            console.log(error);
+                        });
+                    }  
+                }
+            },
+            mounted: function() {
+                axios(config1)
+                .then( function (response) {
+                    console.log(response.data.data);
+                    vm.skills.splice(0, 0, response.data.data['skill']);
+                })
+                .catch ( error => {
+                    console.log(error)
+                });
+            }
+        });
+
+    </script>
+
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</body>
+
+</html>

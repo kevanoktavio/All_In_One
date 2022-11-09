@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+    <title>Update Role</title>
+
+    <!-- Vue 2 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.10/dist/vue.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <!-- Nav Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light custombg">
+		<a class="navbar-brand" href="homepage.html">Learning Journey Planning System</a>
+		<div class="navbar-nav">
+			<div class="nav-item active">
+				<a class="nav-link" href="homepage.html">Home</a>
+			</div>
+			<div class="navbar-item dropdown">
+				<a class="nav-link dropdown-toggle" href="#" id="browseDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					Browse
+				</a>
+				<div class="dropdown-menu" aria-labelledby="browseDropdown">
+					<a class="dropdown-item" href="view_courses.html">Courses</a>
+					<a class="dropdown-item" href="view_positions.html">Positions</a>
+					<a class="dropdown-item" href="search_skill.html">Skills</a>
+				</div>
+			</div>
+            <div class="nav-item active" id="checkuser"></div>
+		</div>
+		<div class="navbar-item ml-auto">
+			<a class="nav-link" href="#" onclick="clearSession()">Logout</a>
+		</div>
+	</nav>
+    
+    <!-- Page Content -->
+    <div class="container mx-5 my-4" id="app">
+        <div v-if="deleted==false">
+            <form>
+            
+            <div v-if="editNameMode==true">
+                
+                <h2>{{selected_role_name}}</h2>
+
+                <h5>New Name: </h5>
+                    <div class="row">
+                        <div class="col-sm">
+                <input class="form-control" :placeholder="selected_role_name" v-model="changed_name">
+            </div>
+                <div class="col-lg"><button type="button" class="btn btn-primary" @click="toggleNameEdit()">Cancel Edit</button></div>
+            </div>
+            </div>
+            <div v-if="editNameMode==false" class="row">
+                <div class="col-sm">
+                <h2>{{selected_role_name}}</h2>
+                </div>
+                <div class="col-lg">
+                <button type="button" class="btn btn-primary" @click="toggleNameEdit()">Edit Name</button>
+                </div>
+            </div>
+            
+            <br/>
+          <h3>Skills Currently Required</h3>
+          <h5 v-if="required_skills.length==0">This position does not require any skills.</h5>
+          <span v-for="skill in static_required_skills" :key="skill.Skill_Name">{{skill.Skill_Name}}<br></span>
+          <div class="container">
+            <br>
+                <div class="row">
+                    <div class="col-md">
+                        <h4>Skills Required</h4>
+                        <span v-for="skill in required_skills" @click="toggleSkill(skill)" :key="skill.Skill_Name"><br>{{skill.Skill_Name}}</span>
+                        
+                      </div>
+                  <div class="col-md">
+                    <h4>Other</h4>
+                    <span v-for="skill in all_skills" @click="toggleSkill(skill)" :key="skill.Skill_Name"><br>{{skill.Skill_Name}}</span>
+                  </div>
+                  
+                  
+                </div><br>
+                <div><button type="button" class="btn btn-primary" @click="save()">Save</button>&nbsp;
+                <button type="button" class="btn btn-secondary" @click="cancel()">Refresh</button>
+                <button type="button" class="btn btn-danger" @click="deletePosition()">Delete Position</button></div>
+
+          </div>
+     
+
+            </form>
+        </div>
+        <div v-if="deleted==true"><h1>Position has been deleted.</h1></div>
+    </div>
+
+    <script>
+        var position = JSON.parse(sessionStorage.getItem("position2"));
+        console.log(position);
+
+        var headers = {
+                "Access-Control-Allow-Origin": "*",
+                "Content-Type": "application/json"
+            }
+        var vm = new Vue({
+            el: '#app',
+            
+            data: {
+                selected_role_name: position.Position_Name, // session data
+                changed_name: position.Position_Name,
+                all_skills: [],
+                required_skills: [],
+                static_required_skills:[],
+                editNameMode:false,
+                deleted:false
+            },
+            methods: {
+                toggleNameEdit(){
+                    if (vm.editNameMode==false){
+                        vm.editNameMode=true
+                    } else {
+                        vm.editNameMode=false
+                        vm.changed_name=''
+                        console.log(vm.selected_role_name)
+                    }
+                },
+                getSkills() {
+                    axios.get('http://127.0.0.1:5000/skill')
+                    .then(function (response3) {
+                        vm.all_skills.splice(0, 0, response3.data.data.skill); 
+                        vm.all_skills=vm.all_skills[0]
+                        axios.get('http://127.0.0.1:5000/skill_set/'+vm.selected_role_name)
+                                .then(function (response) {
+                                    var res=response.data.data['Skill_Set']
+                                    vm.required_skills.splice(0, 0, res); 
+                                    vm.required_skills=vm.required_skills[0]
+                                    console.log(vm.required_skills,'REQUIRED SKILLS !!!!!!======')
+                                    vm.static_required_skills=[...vm.required_skills]
+                                    console.log(vm.static_required_skills,'STATIC')
+                                    
+                                    for(let j = 0; j < vm.required_skills.length; j++){
+                                        const i = vm.all_skills.findIndex(e => e.Skill_Name ==vm.required_skills[j].Skill_Name);
+                                        if (i > -1) {
+                                            vm.all_skills.splice(i,1)
+                                        }
+                                    }
+                                    
+                                    console.log(vm.all_skills,'all skill')
+                                }).catch(error => {
+                                    console.log(error);
+                                });    
+                    }).catch(error => {
+                                console.log(error);
+                            });
+                },
+                getSkills2(){
+                    axios.get('http://127.0.0.1:5000/skill_set/'+vm.selected_role_name)
+                    .then(function (response) {
+                        var res=response.data.data['Skill_Set']
+                        vm.required_skills.splice(0, 0, res); 
+                        vm.required_skills=vm.required_skills[0]
+                        console.log(vm.required_skills,'REQUIRED SKILLS !!!!!!======')
+                        vm.static_required_skills=[...vm.required_skills]
+                        console.log(vm.static_required_skills,'STATIC')
+                        axios.get('http://127.0.0.1:5000/skill')
+                                .then(function (response3) {
+                                    vm.all_skills.splice(0, 0, response3.data.data.skill); 
+                                    vm.all_skills=vm.all_skills[0]
+                                    for(let j = 0; j < vm.required_skills.length; j++){
+                                        const i = vm.all_skills.findIndex(e => e.Skill_Name ==vm.required_skills[j].Skill_Name);
+                                        if (i > -1) {
+                                            vm.all_skills.splice(i,1)
+                                        }
+                                    }
+                                    
+                                    console.log(vm.all_skills,'all skill')
+                                }).catch(error => {
+                                    console.log(error);
+                                });    
+                    }).catch(error => {
+                                console.log(error);
+                            });
+                },
+                toggleSkill(skill) {
+                    //console.log(skill,'skill')
+                    if (vm.all_skills.includes(skill)){
+                        //console.log('it is in all skill')
+                        var index = vm.all_skills.indexOf(skill);
+                        vm.all_skills.splice(index,1)
+                        vm.required_skills.push(skill)
+                    } else {
+                        //console.log('it is in requyired skill')
+                        var index = vm.required_skills.indexOf(skill);
+                        vm.required_skills.splice(index,1)
+                        vm.all_skills.push(skill)
+                    }
+                    //console.log(vm.static_required_skills,'static')
+                    //console.log(vm.required_skills,'required')
+                },
+                deletePosition(){
+                    axios.post("http://127.0.0.1:5000/position/delete",{'Delete':vm.selected_role_name})
+                        .then(response => {
+                        console.log(response,'hi')
+                        vm.deleted=true});
+                },
+                cancel(){
+                    vm.selected_role_name=vm.selected_role_name;
+                    vm.getSkills();
+                    
+                    vm.editNameMode=false
+                },
+                async save(){
+                    // for item of static list
+                    // if not in updated list
+                    // remove
+                    let to_be_deleted=[]
+                    let to_be_added = []
+                    for(let i = 0; i < vm.static_required_skills.length; i++){
+                        if (!vm.required_skills.includes(vm.static_required_skills[i])){
+                            to_be_deleted.push(vm.static_required_skills[i]['Skill_Name'])
+                        }
+                    }
+                    console.log(to_be_deleted,'will be deleted')
+                    
+                    // for item in updated list
+                    // if not in static list
+                    // create
+                    for(let i = 0; i < vm.required_skills.length; i++){
+                        if (!vm.static_required_skills.includes(vm.required_skills[i])){
+                            to_be_added.push(vm.required_skills[i]['Skill_Name'])
+                        }
+                    }
+                    console.log(to_be_added,'will be added')
+
+                    for (add of to_be_added){
+                        console.log(add,'ADD!!!');
+                        await axios.post("http://127.0.0.1:5000/create_new_skillset",{'Skill_Name':add,'Position_Name': vm.selected_role_name})
+                        .then(response => console.log(response,'HEY !!!!!!! ADD !'));
+                    }
+                    for (del of to_be_deleted){
+                        console.log(del,'ADD!!!');
+                        await axios.post("http://127.0.0.1:5000/delete_skillset",{'Skill_Name':del,'Position_Name': vm.selected_role_name})
+                        .then(response => console.log(response,'HEY !!!!!!! DELETE!'));
+                    }
+                    // update_data={'Skills_To_Add':to_be_added,'Skills_To_Delete':to_be_deleted,'Position_Name':'Data Analyst'}
+                    // console.log(update_data,'UPDATE!')
+                    // await axios.post("http://127.0.0.1:5000/update_skillset",update_data)
+                    //     .then(response => console.log(response,'hi'));
+
+                    
+                    // update name of role
+                    update_name_data={"Current_Name":vm.selected_role_name,"New_Name":vm.changed_name}
+                    console.log(update_name_data)
+                    axios.post("http://127.0.0.1:5000/position/update",update_name_data)
+                        .then(response => {
+                        console.log(response,'hi')
+                        console.log('name successfully updated!')
+                        vm.selected_role_name=response.data['current_position']
+                        vm.editNameMode=false});
+                    
+                },
+            },
+            mounted: function() {
+                this.getSkills();
+                console.log(vm.changed_name)
+            }
+        });
+
+    </script>
+
+    <script>
+        if (sessionStorage.getItem('staff')) {
+            var user = JSON.parse(sessionStorage.getItem('staff'));
+            var usertype = user.role;
+            if (usertype==1 | usertype==3) { // if Manager or HR
+                let link = document.createElement('a');
+                link.setAttribute('class', 'nav-link');
+                link.setAttribute('href', 'view_staff_learning_journey.html');
+                link.appendChild(document.createTextNode('View My Staff'));
+                document.getElementById('checkuser').appendChild(link);
+            }
+        }
+        function clearSession() {
+            sessionStorage.clear();
+            window.location.replace('role_toggle.html');
+        }
+    </script>
+
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</body>
+
+</html>

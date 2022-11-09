@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+    <title>Create Skill</title>
+
+    <!-- Vue 2 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.10/dist/vue.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <!-- Nav Bar COPY THE SCRIPT BELOW ALSO -->
+    <nav class="navbar navbar-expand-lg navbar-light custombg">
+		<a class="navbar-brand" href="homepage.html">Learning Journey Planning System</a>
+		<div class="navbar-nav">
+			<div class="nav-item active">
+				<a class="nav-link" href="homepage.html">Home</a>
+			</div>
+			<div class="navbar-item dropdown">
+				<a class="nav-link dropdown-toggle" href="#" id="browseDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					Browse
+				</a>
+				<div class="dropdown-menu" aria-labelledby="browseDropdown">
+					<a class="dropdown-item" href="view_courses.html">Courses</a>
+					<a class="dropdown-item" href="view_positions.html">Positions</a>
+					<a class="dropdown-item" href="search_skill.html">Skills</a>
+				</div>
+			</div>
+            <div class="nav-item active" id="checkuser"></div>
+		</div>
+		<div class="navbar-item ml-auto">
+			<a class="nav-link" href="#" onclick="clearSession()">Logout</a>
+		</div>
+	</nav>
+	<script>
+		if (sessionStorage.getItem('staff')) {
+			var user = JSON.parse(sessionStorage.getItem('staff'));
+			var usertype = user.role;
+			if (usertype==1 | usertype==3) { // if Manager or HR
+                let link = document.createElement('a');
+                link.setAttribute('class', 'nav-link');
+                link.setAttribute('href', 'view_staff_learning_journey.html');
+                link.appendChild(document.createTextNode('View My Staff'));
+                document.getElementById('checkuser').appendChild(link);
+			}
+		}
+		function clearSession() {
+			sessionStorage.clear();
+			window.location.replace('role_toggle.html');
+		}
+	</script>
+    
+    <!-- Page Content -->
+    <div class="container mx-5 my-4" id="app">
+        <form>
+            <h2>Create New Skill</h2><br/>
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <label for="positionName"><b>Skill Name</b></label>
+                    <input type="text" class="form-control" id="skill_name" placeholder="Enter skill name" v-model="skill_name">
+                    <!-- Skill_Name inputted: {{ skill_name }} -->
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <!-- <div class="form-group col-md-2">
+                    <label for="skillset_ID"><b>Skillset ID</b></label>
+                    <input type="number" min="1" class="form-control" id="skillset_ID" placeholder="Enter ID" v-model="skillset_ID">
+                </div> -->
+                <!-- <div class="form-group col-md-1"></div> -->
+                <div class="form-group col-md-6">
+                    <label><b>This new skill is awarded by these courses:</b></label><br/>
+                    <div v-for="(course,index) in courses" v-bind:key="course.Course_ID">
+                        <label class="form-group form-check">
+                            <input type="checkbox" class="form-check-input" v-model="required_courses" v-bind:id="index" v-bind:value="course.Course_ID">
+                            {{ course.Course_Name }}
+                        </label>
+                    </div>
+                    <!-- required courses: {{ required_courses }} -->
+                </div>
+
+                <div class="form-group col-md-6">
+                    <label><b>This new skill is required for these positions:</b></label><br/>
+                    <div v-for="(position,index) in positions" v-bind:key="position.Position_Name">
+                        <label class="form-group form-check">
+                            <input type="checkbox" class="form-check-input" v-model="required_positions" v-bind:id="index" v-bind:value="position.Position_Name">
+                            {{ position.Position_Name }}
+                        </label>
+                    </div>
+                    <!-- required positions: {{ required_positions }} -->
+                </div>
+            </div><br/>
+
+            <div class="form-row text-right">
+                <div class="col-sm-12">
+                    <button type="reset" class="btn customred">Cancel</button>
+                    <button type="submit" class="btn customblue" @click="createSkill()">Create</button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+        function clearSession() {
+			sessionStorage.clear();
+			window.location.replace('role_toggle.html');
+		}
+        
+        var config_get_all_courses = {
+            method: 'get',
+            url: 'http://127.0.0.1:5000/course',
+            headers: { }
+        };
+        var config_get_all_positions = {
+            method: 'get',
+            url: 'http://127.0.0.1:5000/positions',
+            headers: { }
+        };
+
+        var vm = new Vue({
+            el: '#app',
+            data: {
+                courses: [],
+                required_courses: [],
+                positions: [],
+                required_positions: [],
+                skill_name: ''
+            },
+            methods: {
+                createSkill: function() {
+                    event.preventDefault();
+                    let temp = {
+                        'Skill_Name': this.skill_name,
+                    };
+                    var config_create_new_skill = {
+                        method: 'post',
+                        url: 'http://127.0.0.1:5000/skill/create',
+                        headers: {
+                            /* "Access-Control-Allow-Origin": "*", */
+                            "Content-Type": "application/json",
+                        },
+                        data: temp
+                    }
+                    axios(config_create_new_skill)
+                    .then(response => {
+                        console.log('skill added to database');
+                        console.log(JSON.stringify(response.data));
+                        alert('New skill added!');
+                        this.createSkillset();
+                        this.createSkillRewarded();
+                        vm.skill_name = ""
+                    })
+                    .catch(error => {
+                        // this.createSkillset();
+                        console.log(error);
+                    });
+                },
+                createSkillset: function() {
+                    event.preventDefault();
+                
+                    let final = [];
+                    
+                    for (position of vm.required_positions) {
+                        let temp1 = {
+                            'Position_Name': position,
+                            'Skill_Name': this.skill_name
+                        }
+                        final.push(temp1);
+                    }
+                    console.log(final);
+                    for (i in final) {
+                        var config_create_new_skill_set = {
+                            method: 'post',
+                            url: 'http://127.0.0.1:5000/create_new_skillset',
+                            headers: {
+                                /* "Access-Control-Allow-Origin": "*", */
+                                "Content-Type": "application/json"
+                            },
+                            data: final[i]
+                        }
+                        console.log(final[i])
+                        axios(config_create_new_skill_set)
+                        .then( function (response) {
+                            //alert('New skillset(s) added!');
+                            console.log('----- adding skillset to database ------');
+                            console.log(JSON.stringify(response.data));
+                        })
+                        .catch (error => {
+                            console.log(error);
+                        });
+                    }  
+                },
+                createSkillRewarded: function() {
+                    event.preventDefault();
+                
+                    let final = [];
+                    
+                    for (course of vm.required_courses) {
+                        let temp1 = {
+                            'Course_ID': course,
+                            'Skill_Name': this.skill_name
+                        }
+                        final.push(temp1);
+                    }
+                    console.log(final);
+                    for (i in final) {
+                        var config_create_new_skill_rewarded = {
+                            method: 'post',
+                            url: 'http://127.0.0.1:5000/create_new_skill_rewarded',
+                            headers: {
+                                /* "Access-Control-Allow-Origin": "*", */
+                                "Content-Type": "application/json"
+                            },
+                            data: final[i]
+                        }
+                        console.log(final[i])
+                        axios(config_create_new_skill_rewarded)
+                        .then( function (response) {
+                            //alert('New skillset(s) added!');
+                            console.log('----- adding skill rewarded to database ------');
+                            console.log(JSON.stringify(response.data));
+                        })
+                        .catch (error => {
+                            console.log(error);
+                        });
+                    }  
+                }
+            },
+            mounted: function() {
+                axios(config_get_all_courses)
+                .then( function (response) {
+                    console.log('--------- getting all courses --------');
+                    console.log(response.data.data.courses);
+                    vm.courses = response.data.data.courses
+                })
+                .catch ( error => {
+                    console.log(error)
+                });
+
+                axios(config_get_all_positions)
+                .then( function (response) {
+                    console.log('--------- getting all positions --------');
+                    console.log(response.data.data.positions);
+                    vm.positions = response.data.data.positions
+                    // console.log(vm.positions.Position_Name)
+                })
+                .catch ( error => {
+                    console.log(error)
+                });
+            }
+        });
+
+    </script>
+
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</body>
+
+</html>

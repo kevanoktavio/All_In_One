@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="style.css">
+    <title>View Course</title>
+
+    <!-- Vue 2 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.10"></script>
+    <!-- Axios -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <!-- Nav Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light custombg">
+		<a class="navbar-brand" href="homepage.html">Learning Journey Planning System</a>
+		<div class="navbar-nav">
+			<div class="nav-item active">
+				<a class="nav-link" href="homepage.html">Home</a>
+			</div>
+			<div class="navbar-item dropdown">
+				<a class="nav-link dropdown-toggle" href="#" id="browseDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					Browse
+				</a>
+				<div class="dropdown-menu" aria-labelledby="browseDropdown">
+					<a class="dropdown-item" href="view_courses.html">Courses</a>
+					<a class="dropdown-item" href="view_positions.html">Positions</a>
+					<a class="dropdown-item" href="search_skill.html">Skills</a>
+				</div>
+			</div>
+            <div class="nav-item active" id="checkuser"></div>
+		</div>
+		<div class="navbar-item ml-auto">
+			<a class="nav-link" href="#" onclick="clearSession()">Logout</a>
+		</div>
+	</nav>
+	<script>
+		if (sessionStorage.getItem('staff')) {
+			var user = JSON.parse(sessionStorage.getItem('staff'));
+			var usertype = user.role;
+			if (usertype==1 | usertype==3) { // if Manager or HR
+                let link = document.createElement('a');
+                link.setAttribute('class', 'nav-link');
+                link.setAttribute('href', 'view_staff_learning_journey.html');
+                link.appendChild(document.createTextNode('View My Staff'));
+                document.getElementById('checkuser').appendChild(link);
+			}
+		}
+		function clearSession() {
+			sessionStorage.clear();
+			window.location.replace('role_toggle.html');
+		}
+	</script>
+
+    <div class="container mx-5 my-4" id="app">
+        <h2>{{dept}} Department</h2>
+        <div>
+            <button class="btn btn-primary my-1" @click="getSubordinates()">View Employees in Department</button>
+            <button class="btn btn-primary my-1" @click="getLearningJourneys()">View Employees' Learning Journeys</button>
+        </div>
+
+        <br/>
+        
+        <div v-if="showSubs"> 
+            <table class="table">
+                <thead>
+                    <tr>
+                      <th scope="col">Staff ID</th>
+                      <th scope="col">First Name</th>
+                      <th scope="col">Last Name</th>
+                      <th scope="col">Email</th>
+                    </tr>
+                </thead>
+                <tr v-for="emp in this.employees">
+                    <td>{{ emp["staff_id"] }}</td>
+                    <td>{{ emp["staff_fname"] }}</td>
+                    <td>{{ emp["staff_lname"] }}</td>
+                    <td>{{ emp["email"] }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div v-if="showLJs">
+            <div v-for="staff in lj_list">
+                <b>Staff Name: {{ staff[1] }}</b><br/>
+                <b>Staff ID: {{ staff[0] }}</b>
+                <p v-if="typeof(staff[2])=='string'">This staff has no learning journeys.</p>
+                <table class="table" v-else>
+                    <thead>
+                        <tr>
+                          <th scope="col">Position Name</th>
+                          <th scope="col">Skill Name</th>
+                          <th scope="col">Courses</th>
+                        </tr>
+                    </thead>
+                    <tr v-for="(ljs, position) in staff[2]">
+                        <td>{{ position }}</td>
+                        <td><p v-for="lj in ljs">{{ lj.Skill_Name }}</p></td>
+                        <td><p v-for="lj in ljs">{{ lj.Course_ID }}</p></td>
+                    </tr>
+                </table>
+                <hr/>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        var user = JSON.parse(sessionStorage.getItem('staff'));
+
+        var vm = new Vue({
+            el: '#app',
+            data() {
+                return {
+                    employees: [],
+                    subordinates: [],
+                    dept: "",
+                    usertype: 0,
+                    userid: 0,
+                    showSubs: false,
+                    showLJs: false,
+                    lj_list: [],
+                }
+            },
+            mounted: function () {
+                if (sessionStorage.getItem('staff')) {
+                    let user = JSON.parse(sessionStorage.getItem('staff'));
+                    this.dept = user.dept;
+                    this.usertype = user.role;
+                    this.userid = user.staff_id;
+                }
+                var config = {
+                    method: 'get',
+                    url: 'http://127.0.0.1:5000/staff_get/' + this.userid , // to-do: add session data
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }
+                axios(config)
+                .then( response => {
+                    //console.log(response.data.data);
+                    this.dept = response.data.data["staff"][0]['dept'];
+                    this.usertype = response.data.data["staff"][0]['role'];
+                    // console.log(this.usertype)
+                    // console.log(this.dept)
+                })
+                .catch ( error => {
+                    console.log(error)
+                });
+            },
+            methods: {
+                getSubordinates: function() {
+                    event.preventDefault();
+                    this.showSubs = true;
+                    this.showLJs = false;
+                },
+                getLearningJourneys: function() {
+                    event.preventDefault();
+                    this.lj_list = [];
+                    this.showSubs = false;
+                    this.showLJs = true;
+
+                    for (emp of this.subordinates) {
+                        let id = emp.staff_id;
+                        let full_name = emp.staff_fname + " " + emp.staff_lname;
+                        //console.log(full_name);
+                        //console.log(id)
+                        
+                        let config3 = {
+                            method: 'get',
+                            url: 'http://127.0.0.1:5000/get_learning_journey_by_staff_id/' + String(id),
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                        }
+                        axios(config3)
+                            .then(response => {
+                                var all_staffs_lj = [id, full_name];
+                                var temp = {};
+                                var temp2 = [];
+                                if (response.data.code == 200) {
+                                    var datalist = response.data.data.lj;
+                                    //console.log(datalist);
+                                    if (datalist.length == 1) {
+                                        let data = datalist[0]
+                                        let pos = data["Position_Name"];
+                                        temp[pos] = datalist;
+                                        all_staffs_lj.push(temp);
+                                        this.lj_list.push(all_staffs_lj);
+                                    } else {
+                                        for (i=0; i < datalist.length; i++) {  
+                                            let sID = datalist[i]["Staff_ID"];
+                                            let pName = datalist[i]["Position_Name"];
+                                            //console.log(sID, pName);
+                                            if (!(i == 0)) {
+                                                let prevPName = datalist[i-1]["Position_Name"];
+                                                let prevSID = datalist[i-1]["Staff_ID"];
+                                                //console.log(prevPName);
+                                                if (pName == prevPName && sID == prevSID) {
+                                                    temp2.push(datalist[i]);
+                                                    if (i == datalist.length - 1) { temp[pName] = temp2; }
+                                                } else {
+                                                    temp[prevPName] = temp2;
+                                                    temp2 = [];
+                                                    temp2.push(datalist[i]);
+                                                    if (i == datalist.length - 1) { temp[pName] = temp2; }
+                                                }
+                                            } else {
+                                                temp2.push(datalist[i]);
+                                            }
+                                        }
+                                        all_staffs_lj.push(temp);
+                                        this.lj_list.push(all_staffs_lj);
+                                    }
+                                } 
+                            })
+                            .catch(error => {
+                                console.log("====== Error!! ====== " + error);
+                                this.lj_list.push([id, full_name, "No learning journey created."])
+                            });
+                    }
+                    console.log(this.lj_list);
+                }
+            },
+            watch: {
+                dept: function() {
+                    axios({
+                        method: 'get',
+                        url: 'http://127.0.0.1:5000/staff_get_by_dept/' + vm.dept,
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    })
+                    .then(response => {
+                        this.employees = response.data.data["staffs"];
+                        //console.log(this.employees);
+                        for (emp of this.employees) {
+                            if (emp.staff_id != vm.userid) { 
+                                this.subordinates.push(emp); 
+                            } 
+                        } 
+                    })
+                    .catch(error => {
+                        console.log(error);
+                    });
+                },
+            },
+        })
+
+    </script>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+
+</body>
+</html>

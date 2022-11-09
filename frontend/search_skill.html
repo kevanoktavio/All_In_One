@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+    <title>Skills Search Page</title>
+
+    <!-- Vue 2 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.10/dist/vue.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+
+    <!-- Nav Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light custombg">
+		<a class="navbar-brand" href="homepage.html">Learning Journey Planning System</a>
+		<div class="navbar-nav">
+			<div class="nav-item active">
+				<a class="nav-link" href="homepage.html">Home</a>
+			</div>
+			<div class="navbar-item dropdown">
+				<a class="nav-link dropdown-toggle" href="#" id="browseDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					Browse
+				</a>
+				<div class="dropdown-menu" aria-labelledby="browseDropdown">
+					<a class="dropdown-item" href="view_courses.html">Courses</a>
+					<a class="dropdown-item" href="view_positions.html">Positions</a>
+					<a class="dropdown-item" href="search_skill.html">Skills</a>
+				</div>
+			</div>
+            <div class="nav-item active" id="checkuser"></div>
+		</div>
+		<div class="navbar-item ml-auto">
+			<a class="nav-link" href="#" onclick="clearSession()">Logout</a>
+		</div>
+	</nav>
+	<script>
+		if (sessionStorage.getItem('staff')) {
+			var user = JSON.parse(sessionStorage.getItem('staff'));
+			var usertype = user.role;
+			if (usertype==1 | usertype==3) { // if Manager or HR
+                let link = document.createElement('a');
+                link.setAttribute('class', 'nav-link');
+                link.setAttribute('href', 'view_staff_learning_journey.html');
+                link.appendChild(document.createTextNode('View My Staff'));
+                document.getElementById('checkuser').appendChild(link);
+			}
+		}
+		function clearSession() {
+			sessionStorage.clear();
+			window.location.replace('role_toggle.html');
+		}
+	</script>
+
+
+    <!--Page Content-->
+
+    <div id="app">
+        <section class="pt-5 pb-5">
+            <div class="container">
+                <div class="col-6">
+                    <h3 class="mb-3">Skills</h3>
+                </div>
+                
+                <div class="container py-1">
+                    <div class="row">
+                        <div class ="col-6">
+                            <div class="input-group mb-3">
+                                <input v-model="Submitted_Skill_Name_Enquiry" type="text" class="form-control" placeholder="Search" aria-label="search" aria-describedby="search-bar">
+                                <div class="input-group-prepend">
+                                    <button class="btn btn-outline-secondary" type="button" @click="searchSkills()">🔍︎</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="search-results" class="container-fluid border border-info p-4">
+                    <div class="row">
+                        <button v-if="usertype == 1" class="btn btn-primary float-right ml-4 mb-2" @click="createNewSkill()">(ADMIN) Add a new skill</button>
+                    </div>
+        
+                    <div class="row ml-2">
+                        <h3 class="text-center">
+                            Available Skills:
+                        </h3>
+                    </div>
+        
+                    <div class="row">
+                        <ul class="list-group list-group-flush">
+                            <div v-for="skill_name in search_results">
+                                <li class="list-group-item" >
+                                    <button
+                                    type="button"
+                                    class="btn btn-link float-left ml-4"
+                                    :value="skill_name"
+                                    @click="sendSkill(skill_name)">
+                                        {{ skill_name }}
+                                    </button>
+                                    <button 
+                                    v-if="usertype == 1" 
+                                    class="btn btn-danger float-right ml-4"
+                                    @click="deleteSkill(skill_name)">
+                                        Delete
+                                    </button>
+                                </li>
+                            </div>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+
+    </div>
+
+    <script>
+        function clearSession() {
+			sessionStorage.clear();
+			window.location.replace('role_toggle.html');
+		}
+
+        var vm = new Vue({
+            el: '#app',
+            data: {                            
+                Submitted_Skill_Name_Enquiry : '',
+                search_results : [],
+                // role: "staff",
+                // role: "hr",
+                // role: "manager",
+                usertype: null
+            },
+            methods: {
+                searchSkills: function() {
+                    event.preventDefault();
+
+                    var config = {
+                        method: 'get', //get courses by skill name
+                        url: `http://127.0.0.1:5000/skill/name/` + vm.Submitted_Skill_Name_Enquiry,
+                        headers: { }
+                    };
+
+                    axios(config)
+                    .then(function (response) {
+                        vm.search_results = [] //reset search results
+                        axios_result = response.data.data.skills
+                        for (result in axios_result){
+                            vm.search_results.push(axios_result[result].Skill_Name)
+                        }
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    });
+                },
+                deleteSkill: function(skill_name) {
+                    event.preventDefault();
+                    console.log("=============== delete skill start ====================")
+                    console.log("skill to be deleted: " + skill_name)
+
+                    var config = {
+                        method: 'delete', //get courses by skill name
+                        url: `http://127.0.0.1:5000/skill/delete/` + skill_name,
+                        headers: { }
+                    };
+                    axios(config)
+                    .then(function (response) {
+                        console.log(JSON.stringify(response.data));
+                        index_needed = vm.search_results.indexOf(skill_name)
+                        console.log(vm.search_results)
+                        console.log(index_needed)
+                        vm.search_results.splice(index_needed, 1)
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                        console.log('======== delete skill ERROR NOT WORKING ===========')
+                    });
+                    
+                },
+                createNewSkill: function() {
+                    window.location.href = "create_skill.html";
+                },
+                sendSkill: function(skill_name){
+                    console.log(skill_name)
+                    sessionStorage.setItem("skill_name", skill_name); //sessionStorage will have staff obj and position obj
+                    window.location.replace("view_skill.html");
+                }
+            },
+            mounted: function(){ //show all skils when first loading
+                var config = {
+                    method: 'get',
+                    url: 'http://127.0.0.1:5000/skill',
+                    headers: { }
+                    };
+
+                axios(config)
+                .then(function (response) {
+                    axios_result = response.data.data.skill
+                    // console.log(axios_result)
+                    for (result in axios_result){
+                        // console.log(axios_result[result].Skill_Name)
+                        vm.search_results.push(axios_result[result].Skill_Name)
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+                
+                // get user type
+                if (sessionStorage.getItem('staff')) {
+                    console.log('======= getting user type ======')
+                    let user = JSON.parse(sessionStorage.getItem('staff'));
+                    // this.dept = user.dept;
+                    this.usertype = user.role;
+                    console.log(this.usertype)
+                    // this.userid = user.staff_id;
+                }
+            }
+        })
+    </script>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  </body>
+</html>

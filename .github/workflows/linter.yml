@@ -1,0 +1,65 @@
+#################################
+#################################
+## Super Linter GitHub Actions ##
+#################################
+#################################
+name: All-In-One CICD
+
+#
+# Documentation:
+# https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions
+#
+
+#############################
+# Start the job on all push #
+#############################
+on:
+  push:
+  pull_request:
+    branches: [master, main]
+
+###############
+# Set the Job #
+###############
+jobs:
+  build:
+    # Name the Job
+    name: Unit and Integration Testing
+    # Set the agent to run on
+    runs-on: ubuntu-latest
+
+    ##################
+    # Load all steps #
+    ##################
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.x
+        #This step uses the actions/setup-python@v4 action to install the 
+        #specified version of the python (this example uses v3.x which is the latest minor version in 3.x series). 
+        #This puts both the python commands in your PATH.
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      
+      - name: Test with unittest
+        #runs the unittest
+        run: |
+          python backend/test_unit.py
+
+      - name: Test with integration
+        #runs the integration test
+        run: |
+          python backend/test_integration.py

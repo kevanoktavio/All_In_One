@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="style.css">
+    <title>Homepage</title>
+
+    <!-- Vue 2 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.10"></script>
+    <!-- Axios -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    
+
+</head>
+
+<body>
+	<!-- Nav Bar COPY THE SCRIPT BELOW ALSO -->
+    <nav class="navbar navbar-expand-lg navbar-light custombg">
+		<a class="navbar-brand" href="homepage.html">Learning Journey Planning System</a>
+		<div class="navbar-nav">
+			<div class="nav-item active">
+				<a class="nav-link" href="homepage.html">Home</a>
+			</div>
+			<div class="navbar-item dropdown">
+				<a class="nav-link dropdown-toggle" href="#" id="browseDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					Browse
+				</a>
+				<div class="dropdown-menu" aria-labelledby="browseDropdown">
+					<a class="dropdown-item" href="view_courses.html">Courses</a>
+					<a class="dropdown-item" href="view_positions.html">Positions</a>
+					<a class="dropdown-item" href="search_skill.html">Skills</a>
+				</div>
+			</div>
+            <div class="nav-item active" id="checkuser"></div>
+		</div>
+		<div class="navbar-item ml-auto">
+			<a class="nav-link" href="#" onclick="clearSession()">Logout</a>
+		</div>
+	</nav>
+	<script>
+		if (sessionStorage.getItem('staff')) {
+			var user = JSON.parse(sessionStorage.getItem('staff'));
+			var usertype = user.role;
+			if (usertype==1 | usertype==3) { // if Manager or HR
+                let link = document.createElement('a');
+                link.setAttribute('class', 'nav-link');
+                link.setAttribute('href', 'view_staff_learning_journey.html');
+                link.appendChild(document.createTextNode('View My Staff'));
+                document.getElementById('checkuser').appendChild(link);
+			}
+		}
+		function clearSession() {
+			sessionStorage.clear();
+			window.location.replace('role_toggle.html');
+		}
+	</script>
+
+    <div class="container-fluid" id = "app">
+
+        <div class="d-flex justify-content-center pt-4">
+            <div>
+                <h1>Welcome Back {{fname}}</h1>
+                <div v-if="response.length == 0">
+                    <p>Seems like you have not create a Learning Journey</p>
+                    <form action="view_positions.html">
+                        <button type="submit"> Click here to Create Now! </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <h2 class="pt-4">Learning Journey Tracker</h2>
+            <div class="row">
+                <table class="table border">
+                    <thead></thead>
+                    <tr v-model = "position_name"> <td> <h2>{{ position_name }}</h2> </td>  
+                        <td> <select v-model = "lj_no">
+                            <option selected disabled value="">Select your Learning Journey to Track!</option>
+                            <option v-for = "(lj, index) in response" :value="index">
+                                {{ lj[0].Position_Name }}
+                            </option>
+                        </select>
+                        </td>
+                    </tr>
+                    <tbody>
+                        <tr>
+                            <th> Skills </th>
+                            <th> Courses </th>
+                        </tr>
+                        <tr scope="col" v-for="(lj,index) in lj_list">
+                            <td> <button type="button" :value="lj.Skill_Name" class="btn btn-primary"> {{lj.Skill_Name}} </button>  </td>
+                            <!-- can v-for the courses to have multiple courses for a single skill -->
+                            <td> <button type="button" :value="lj.Course_ID" class="btn btn-primary"> {{lj.Course_ID}} </button>  </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="row d-flex justify-content-between" v-if="position_name">
+                <a type="button" class="btn btn-danger" @click="delete_learning_journey">Delete Learning Journey</a>
+                <!-- <a type="button" class="btn btn-primary" @click="edit_learning_journey">Edit Learning Journey</a> -->
+                <a href = "edit_learning_journey.html" type="button" class="btn btn-primary" @click="edit_learning_journey">Edit Learning Journey</a>
+            </div>
+            <div v-else></div>
+        </div>
+    </div>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+
+    <script>
+        const vm = new Vue({
+            el: '#app',
+            data: {
+                response: [],
+                lj_list: [],
+                position_name: "",
+                lj_no: "",
+                lj_name: "",
+                staff_id: "",
+                fname: ""
+            },
+            mounted: function get_learning_journey() {
+                if(sessionStorage.getItem("staff")){
+                    var staff = JSON.parse(sessionStorage.getItem("staff"));
+                    this.staff_id = staff.staff_id;
+                    let config = {
+                        method: 'get',
+                        url: 'http://127.0.0.1:5000/get_learning_journey_by_staff_id/' + this.staff_id , //Should not be hardcoded but no session for now
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                        }
+                    axios(config)
+                        .then(function (response) {
+                            vm.fname = staff.staff_fname;
+                            let datalist = response.data.data.lj;
+                            let tempArray = [];
+                            console.log(datalist.length);
+                            if (datalist.length == 1) {
+                                vm.response.push([datalist[0]]);
+                            } else {
+                                for (i=0; i < datalist.length; i++) {
+                                    let sID = datalist[i]["Staff_ID"];
+                                    let pName = datalist[i]["Position_Name"];
+                                    if(!(i == 0)){
+                                        let prevPName = datalist[i-1]["Position_Name"];
+                                        let prevSID = datalist[i-1]["Staff_ID"];
+                                        if(pName == prevPName && sID == prevSID){
+                                            tempArray.push(datalist[i]);
+                                            if(i == datalist.length - 1){
+                                                vm.response.push(tempArray);
+                                            }
+                                        }
+                                        else{
+                                            vm.response.push(tempArray);
+                                            tempArray = [];
+                                            tempArray.push(datalist[i]);
+                                            if(i == datalist.length - 1){
+                                                vm.response.push(tempArray);
+                                            }
+                                        }
+                                    }
+                                    else {
+                                        tempArray.push(datalist[i]);
+                                    }
+                                } // end of for loop
+                            } // end of else
+                        }) // end of axios
+                    
+                }
+            }, // end of mounted
+            methods:{
+                edit_learning_journey(){
+                    let lj_id_list = [];
+                    console.log(vm.lj_list);
+                    for(lj in vm.lj_list){
+                        lj_id_list.push(vm.lj_list[lj]["Learning_Journey_ID"]);
+                    }
+                    console.log(lj_id_list);
+                    sessionStorage.setItem("position_name", vm.position_name);
+                    sessionStorage.setItem("lj_id_list", JSON.stringify(lj_id_list));
+                },
+                delete_learning_journey(){
+                    let config = {
+                        method: 'DELETE',
+                        url: 'http://127.0.0.1:5000/delete_learning_journey/' + vm.staff_id + "/" + vm.position_name,
+                };
+                if(confirm("Are you sure you want to delete the " + vm.position_name + " learning journey")){
+                    axios(config)
+                    .then(function (response) {
+                        console.log(response);
+                        alert("You have successfully deleted the " + vm.position_name + " learning journey")
+                        location.reload();
+                    })                
+                } else{
+                    alert("Good Choice");
+                }
+                } //delete_learning_journey()
+            }, // end of methods
+            watch: {
+                // whenever question changes, this function will run
+                lj_no: function () {
+                    vm.position_name = vm.response[vm.lj_no][0]["Position_Name"];
+                    vm.lj_list = [vm.response[vm.lj_no]][0];
+                    console.log(vm.lj_list);
+                }
+            }
+        })
+    </script>
+
+    <script>
+    function clearSession() {
+      sessionStorage.clear();
+      window.location.replace('role_toggle.html');
+    }
+    </script>
+
+</body>
+
+</html>
